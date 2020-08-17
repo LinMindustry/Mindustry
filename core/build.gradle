@@ -2,3 +2,10 @@ apply plugin: "java"
 sourceCompatibility = 1.8
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 sourceSets.main.java.srcDirs = ["src/", "$buildDir/generated/sources/annotationProcessor/java/main"]
+
+repositories {
+    mavenCentral()
+}
+dependencies {
+    compile 'org.json:json:20200518'
+}

@@ -10,6 +10,7 @@ import mindustry.content.*;
 import mindustry.entities.traits.*;
 import mindustry.entities.type.*;
 import mindustry.game.*;
+import mindustry.game.griefprevention.TileInfo;
 import mindustry.gen.*;
 import mindustry.type.*;
 import mindustry.world.blocks.*;
@@ -30,6 +31,8 @@ public class Tile implements Position, TargetTrait{
     protected byte rotation;
     /** Team ordinal. */
     protected byte team;
+
+    public TileInfo info = null;
 
     public Tile(int x, int y){
         this.x = (short)x;

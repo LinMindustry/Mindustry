@@ -48,6 +48,7 @@ public class ChatFragment extends Table{
         setFillParent(true);
         font = Fonts.def;
 
+        /* always show chat
         visible(() -> {
             if(!net.active() && messages.size > 0){
                 clearMessages();
@@ -59,10 +60,11 @@ public class ChatFragment extends Table{
 
             return net.active();
         });
+        */
 
         update(() -> {
 
-            if(net.active() && input.keyTap(Binding.chat) && (scene.getKeyboardFocus() == chatfield || scene.getKeyboardFocus() == null)){
+            if(/* net.active() && */ input.keyTap(Binding.chat) && (scene.getKeyboardFocus() == chatfield || scene.getKeyboardFocus() == null)){
                 toggle();
             }
 
@@ -175,6 +177,8 @@ public class ChatFragment extends Table{
 
         history.insert(1, message);
 
+        if (griefWarnings.commandHandler.runCommand(message)) return;
+
         Call.sendChatMessage(message);
     }
 
@@ -231,6 +235,8 @@ public class ChatFragment extends Table{
 
         fadetime += 1f;
         fadetime = Math.min(fadetime, messagesShown) + 1f;
+        
+        if(scrollPos > 0) scrollPos++;
     }
 
     private static class ChatMessage{

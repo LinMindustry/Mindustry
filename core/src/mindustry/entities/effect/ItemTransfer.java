@@ -1,5 +1,7 @@
 package mindustry.entities.effect;
 
+import arc.Core;
+import arc.util.Log;
 import mindustry.annotations.Annotations.Loc;
 import mindustry.annotations.Annotations.Remote;
 import arc.graphics.g2d.*;
@@ -98,14 +100,19 @@ public class ItemTransfer extends TimedEntity implements DrawTrait{
         current.add(tovec.set(to.getX(), to.getY()).sub(from).nor().rotate90(1).scl(seed * fslope() * 10f));
         set(current.x, current.y);
     }
-
+    public float opacity1 = Core.settings.getInt("itemTransferOpacity") / 100f;
+    // needs to check if the mining is done by player or by draugs
+    public void log_info(String text){
+        Log.info("ItemTransfer.java: "+text);
+    }
     @Override
-    public void draw(){
+    public void draw(){ // this draws the circles of items
+        Draw.alpha(opacity1);
         Lines.stroke(fslope() * 2f, Pal.accent);
-
+        Draw.alpha(opacity1);
         Lines.circle(x, y, fslope() * 2f);
-
         Draw.color(item.color);
+        Draw.alpha(opacity1); // white item transfer circles
         Fill.circle(x, y, fslope() * 1.5f);
 
         Draw.reset();

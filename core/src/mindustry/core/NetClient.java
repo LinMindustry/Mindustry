@@ -17,8 +17,11 @@ import mindustry.entities.Effects.*;
 import mindustry.entities.traits.BuilderTrait.*;
 import mindustry.entities.traits.*;
 import mindustry.entities.type.*;
+import mindustry.entities.type.base.FlyingUnit;
+import mindustry.entities.type.base.GroundUnit;
 import mindustry.game.EventType.*;
 import mindustry.game.*;
+import mindustry.game.griefprevention.GriefWarnings;
 import mindustry.gen.*;
 import mindustry.net.Administration.*;
 import mindustry.net.Net.*;
@@ -29,9 +32,17 @@ import mindustry.world.*;
 import mindustry.world.modules.*;
 
 import java.io.*;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.*;
 
+// custom
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+
 import static mindustry.Vars.*;
+import static mindustry.Vars.player;
+import static mindustry.content.UnitTypes.*;
 
 public class NetClient implements ApplicationListener{
     private final static float dataTimeout = 60 * 18;
@@ -81,7 +92,7 @@ public class NetClient implements ApplicationListener{
             c.mods = mods.getModStrings();
             c.mobile = mobile;
             c.versionType = Version.type;
-            c.color = Color.rgba8888(player.color);
+            c.color = player.color.rgba();
             c.usid = getUsid(packet.addressTCP);
             c.uuid = platform.getUUID();
 
@@ -103,6 +114,7 @@ public class NetClient implements ApplicationListener{
             logic.reset();
             platform.updateRPC();
             player.name = Core.settings.getString("name");
+            player.color.set(Core.settings.getInt("color-0"));
 
             if(quiet) return;
 
@@ -125,6 +137,10 @@ public class NetClient implements ApplicationListener{
             Log.info("Recieved world data: {0} bytes.", data.stream.available());
             NetworkIO.loadWorld(new InflaterInputStream(data.stream));
 
+            // custom
+            // ready for new game
+            // build core table
+            ui.hudfrag.buildCoreTable();
             finishConnecting();
         });
 
@@ -138,12 +154,31 @@ public class NetClient implements ApplicationListener{
     @Remote(targets = Loc.server, variants = Variant.both)
     public static void sendMessage(String message, String sender, Player playersender){
         if(Vars.ui != null){
+            if(griefWarnings.auto.interceptMessage(message, sender, playersender)) return;
             Vars.ui.chatfrag.addMessage(message, sender);
         }
 
         if(playersender != null){
             playersender.lastText = message;
             playersender.textFadeTime = 1f;
+        }
+        // check kicked and joined times
+        Pattern pattern = Pattern.compile("Player ID .+==");
+        Matcher m = pattern.matcher(message);
+        if(m.find()) {
+            String id = message.substring(m.start() + 9, m.end());
+        }
+        pattern = Pattern.compile("Times Joined \\d+");
+        m = pattern.matcher(message);
+        if(m.find()) {
+            String joined = message.substring(m.start() + 13, m.end());
+            System.out.println("Joined: " + joined);
+        }
+        pattern = Pattern.compile("Times Kicked \\d+");
+        m = pattern.matcher(message);
+        if(m.find()) {
+            String kicked = message.substring(m.start() + 13, m.end());
+            System.out.println("Kicked: " + kicked);
         }
     }
 
@@ -152,6 +187,33 @@ public class NetClient implements ApplicationListener{
     public static void sendMessage(String message){
         if(Vars.ui != null){
             Vars.ui.chatfrag.addMessage(message, null);
+            if(!Core.settings.getBool("kick_cam")) {
+                return;
+            }
+            Pattern pattern = Pattern.compile("kicking\\[orange\\].+\\[\\].\\[accent\\]");
+            Matcher m = pattern.matcher(message);
+            if(m.find()) {
+                String target_player_name = message.substring(m.start() + 16, m.end() - 11);
+                // reset freecam
+                for(Player user: playerGroup){
+                    if(user.onKick) {
+                        // reset freecam
+                        user.onKick = false;
+                    }
+                }
+                for(Player user: playerGroup){
+                    if(user.name.equals(target_player_name)) {
+                        // pause building
+                        player.isBuilding = false;
+                        player.buildWasAutoPaused = false;
+                        // enable /history
+                        griefWarnings.commandHandler.runCommand("/history");
+                        ui.chatfrag.addMessage("Showing player " + griefWarnings.formatPlayer(user), null);
+                        user.onKick = true;
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -233,9 +295,52 @@ public class NetClient implements ApplicationListener{
 
     @Remote(variants = Variant.one)
     public static void onTraceInfo(Player player, TraceInfo info){
-        if(player != null){
-            ui.traces.show(player, info);
+        // custom
+        // hijack
+        for(Player user : playerGroup) {
+            if(user.name.equals(player.name) && !user.checked) {
+                user.isMobile = info.mobile;
+                user.modded = info.modded;
+                user.uuid = info.uuid;
+                user.ip = info.ip;
+                String addedinfo = "";
+                if(player.isMobile) {
+                    addedinfo = "\n[#00ffff]Mobile";
+                }
+                else {
+                    addedinfo = "\n[#00ffff]PC";
+                }
+                if(player.modded) {
+                    addedinfo += " [red]modded";
+                }
+                user.addedinfo = addedinfo + griefWarnings.getCountry(info.ip);
+                if(Core.settings.getBool("iprisk")) {
+                    user.isIPRisk = griefWarnings.getIPLevel(info.ip);
+                }
+                if(Core.settings.getBool("namerisk")) {
+                    user.isNameRisk = griefWarnings.getNameLevel(user.name);
+                }
+                if(user.isIPRisk && Core.settings.getBool("iprisk")) {
+                    user.addedinfo += "\n[red]Risky IP";
+                }
+                else if(user.isNameRisk && Core.settings.getBool("namerisk")) {
+                    user.addedinfo += "\n[orange]Suspicious Name";
+                }
+                else if(Core.settings.getBool("iprisk") || Core.settings.getBool("namerisk")) {
+                    user.addedinfo += "\n[teal]Safe";
+                }
+                // autokick
+                if(Core.settings.getBool("auto_kick") && (user.isNameRisk || user.isIPRisk)) {
+                    Call.sendChatMessage("/tempban #" + user.id + " 1" + " ADMIN AUTO KICK");
+                    ui.chatfrag.addMessage("Auto Kicked " + user.name + " with uuid " + user.uuid, null);
+                }
+                user.checked = true;
+                break;
+            }
         }
+//        if(player != null && !griefWarnings.handleTraceResult(player, info)){
+//            ui.traces.show(player, info);
+//        }
     }
 
     @Remote(variants = Variant.one, priority = PacketPriority.high)
@@ -342,6 +447,7 @@ public class NetClient implements ApplicationListener{
             netClient.quiet = true;
             net.disconnect();
         });
+        griefWarnings.handleWorldDataBegin();
     }
 
     @Remote(variants = Variant.one)
@@ -352,6 +458,7 @@ public class NetClient implements ApplicationListener{
 
     @Remote
     public static void onPlayerDisconnect(int playerid){
+        griefWarnings.handlePlayerDisconnect(playerid);
         playerGroup.removeByID(playerid);
     }
 
@@ -400,6 +507,7 @@ public class NetClient implements ApplicationListener{
                 if(add){
                     entity.add();
                     netClient.addRemovedEntity(entity.getID());
+                    if (entity instanceof Player) griefWarnings.handlePlayerEntitySnapshot((Player)entity);
                 }
             }
         }catch(IOException e){
@@ -564,6 +672,15 @@ public class NetClient implements ApplicationListener{
 
         if(timer.get(1, 60)){
             Call.onPing(Time.millis());
+        }
+
+        // custom: trace on kick player
+        for(Player user: playerGroup){
+            if(user.onKick) {
+                // reset freecam
+                griefWarnings.auto.setFreecam(true, user.x, user.y);
+                break;
+            }
         }
     }
 

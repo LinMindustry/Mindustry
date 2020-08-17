@@ -41,7 +41,7 @@ public class TileEntity extends BaseEntity implements TargetTrait, HealthTrait{
     public @Nullable ConsumeModule cons;
 
     /** List of (cached) tiles with entities in proximity, used for outputting to */
-    private Array<Tile> proximity = new Array<>(8);
+    public Array<Tile> proximity = new Array<>(8);
     private boolean dead = false;
     private boolean sleeping;
     private float sleepTime;

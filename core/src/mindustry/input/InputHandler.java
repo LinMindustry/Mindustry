@@ -95,6 +95,8 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
             tile.entity.updateProximity();
             tile.entity.noSleep();
         }
+
+        griefWarnings.handleRotateBlock(player, tile, direction);
     }
 
     @Remote(targets = Loc.both, forward = true, called = Loc.server)
@@ -156,6 +158,7 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         if(tile == null || player == null) return;
         if(net.server() && (!Units.canInteract(player, tile) ||
             !netServer.admins.allowAction(player, ActionType.tapTile, tile, action -> {}))) throw new ValidateException(player, "Player cannot tap a tile.");
+        griefWarnings.handleTileTapped(player, tile);
         tile.block().tapped(tile, player);
         Core.app.post(() -> Events.fire(new TapEvent(tile, player)));
     }
@@ -166,6 +169,9 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
 
         if(net.server() && (!Units.canInteract(player, tile) ||
             !netServer.admins.allowAction(player, ActionType.configure, tile, action -> action.config = value))) throw new ValidateException(player, "Player cannot configure a tile.");
+
+        griefWarnings.handleBlockBeforeConfigure(tile, player, value);
+
         tile.block().configured(tile, player, value);
         Core.app.post(() -> Events.fire(new TapConfigEvent(tile, player, value)));
     }
@@ -255,10 +261,19 @@ public abstract class InputHandler implements InputProcessor, GestureListener{
         if(lastSchematic == null) return;
 
         ui.showTextInput("$schematic.add", "$name", "", text -> {
-            lastSchematic.tags.put("name", text);
-            schematics.add(lastSchematic);
-            ui.showInfoFade("$schematic.saved");
-            ui.schematics.showInfo(lastSchematic);
+            Schematic replacement = schematics.all().find(s -> s.name().equals(text));
+            if(replacement != null){
+                ui.showConfirm("$confirm", "$schematic.replace", () -> {
+                    schematics.overwrite(replacement, lastSchematic);
+                    ui.showInfoFade("$schematic.saved");
+                    ui.schematics.showInfo(replacement);
+                });
+            }else{
+                lastSchematic.tags.put("name", text);
+                schematics.add(lastSchematic);
+                ui.showInfoFade("$schematic.saved");
+                ui.schematics.showInfo(lastSchematic);
+            }
         });
     }
 

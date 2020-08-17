@@ -2,6 +2,7 @@ package mindustry.ui.dialogs;
 
 import arc.*;
 import arc.files.*;
+import arc.func.Boolc;
 import arc.graphics.*;
 import arc.graphics.Texture.*;
 import arc.input.*;
@@ -28,6 +29,8 @@ public class SettingsMenuDialog extends SettingsDialog{
     private SettingsTable graphics;
     private SettingsTable game;
     private SettingsTable sound;
+    private SettingsTable AGkick;
+    private SettingsTable AGgraph;
 
     private Table prefs;
     private Table menu;
@@ -67,7 +70,8 @@ public class SettingsMenuDialog extends SettingsDialog{
         game = new SettingsTable();
         graphics = new SettingsTable();
         sound = new SettingsTable();
-
+        AGkick = new SettingsTable();
+        AGgraph = new SettingsTable();
         prefs = new Table();
         prefs.top();
         prefs.margin(14f);
@@ -190,6 +194,10 @@ public class SettingsMenuDialog extends SettingsDialog{
         menu.addButton("$settings.graphics", style, () -> visible(1));
         menu.row();
         menu.addButton("$settings.sound", style, () -> visible(2));
+        menu.row();
+        menu.addButton("AG Kick Settings", style, () -> visible(3));
+        menu.row();
+        menu.addButton("AG Graphics Settings (Restart needed)", style, () -> visible(4));
         menu.row();
         menu.addButton("$settings.language", style, ui.language::show);
         if(!mobile || Core.settings.getBool("keyboard")){
@@ -359,6 +367,36 @@ public class SettingsMenuDialog extends SettingsDialog{
         if(!mobile){
             Core.settings.put("swapdiagonal", false);
         }
+        AGgraph.pref(new Setting(){
+            @Override
+            public void add(SettingsTable table){
+                table.addButton("These settings need a restart to take effect", () -> {
+                    hide();
+                }).size(600,60).pad(6).center();
+                table.add();
+                table.row();
+                hide();
+
+            }
+        });
+        AGgraph.checkPref("core_table", "Core Table", true);
+        AGgraph.checkPref("enemy_table", "Enemy Table", true);
+        AGgraph.checkPref("army_table", "Army Table", true);
+        AGgraph.checkPref("tile_info", "Tile Info", true);
+        AGkick.checkPref("kick_cam", "Kick Cam", true);
+        AGkick.checkPref("auto_kick", "Auto Kick", false);
+        AGkick.checkPref("iprisk", "Ban Risky IP", false);
+        AGkick.checkPref("namerisk", "Ban Risky Name", false);
+        AGkick.checkPref("whitehammeronly", "White Hammers Only (for non admins/mods, restart needed)", false);
+        AGgraph.sliderPref("drawDraugsOpacity", 10, 0, 100, 5, s -> s + "%");
+        AGgraph.sliderPref("drawMiningOpacity", 10, 0, 100, 5, s -> s + "%");
+        AGgraph.sliderPref("itemTransferOpacity", 50, 0, 100, 5, s -> s + "%");
+        AGgraph.sliderPref("enemyFlyingUnitsOpacity", 40, 0, 100, 5, s -> s + "%");
+        AGgraph.sliderPref("enemyLandUnitsOpacity", 40, 0, 100, 5, s -> s + "%");
+        AGgraph.sliderPref("allyFlyingUnitsOpacity", 40, 0, 100, 5, s -> s + "%");
+        AGgraph.sliderPref("allyLandUnitsOpacity", 40, 0, 100, 5, s -> s + "%");
+        AGgraph.sliderPref("shadowFlyingOpacity", 15, 0, 100, 5, s -> s + "%");
+
     }
 
     private void back(){
@@ -369,7 +407,7 @@ public class SettingsMenuDialog extends SettingsDialog{
 
     private void visible(int index){
         prefs.clearChildren();
-        prefs.add(new Table[]{game, graphics, sound}[index]);
+        prefs.add(new Table[]{game, graphics, sound, AGkick,AGgraph}[index]);
     }
 
     @Override

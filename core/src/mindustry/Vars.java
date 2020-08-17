@@ -17,6 +17,7 @@ import mindustry.entities.effect.*;
 import mindustry.entities.traits.*;
 import mindustry.entities.type.*;
 import mindustry.game.*;
+import mindustry.game.griefprevention.GriefWarnings;
 import mindustry.game.EventType.*;
 import mindustry.gen.*;
 import mindustry.input.*;
@@ -38,7 +39,7 @@ public class Vars implements Loadable{
     /** Whether the logger is loaded. */
     public static boolean loadedLogger = false, loadedFileLogger = false;
     /** Maximum schematic size.*/
-    public static final int maxSchematicSize = 32;
+    public static final int maxSchematicSize = 128;
     /** All schematic base64 starts with this string.*/
     public static final String schematicBaseStart ="bXNjaAB";
     /** IO buffer size. */
@@ -191,6 +192,8 @@ public class Vars implements Loadable{
 
     public static Player player;
 
+    public static GriefWarnings griefWarnings;
+
     @Override
     public void loadAsync(){
         loadSettings();
@@ -269,6 +272,8 @@ public class Vars implements Loadable{
         modDirectory = dataDirectory.child("mods/");
         schematicDirectory = dataDirectory.child("schematics/");
         bebuildDirectory = dataDirectory.child("be_builds/");
+
+        griefWarnings = new GriefWarnings();
 
         modDirectory.mkdirs();
 

@@ -20,7 +20,7 @@ public class Fx implements ContentList{
 
     none, placeBlock, breakBlock, smoke, spawn, tapBlock, select,
     vtolHover, unitDrop, unitPickup, unitLand, pickup, healWave, heal, landShock, reactorsmoke, nuclearsmoke, nuclearcloud,
-    redgeneratespark, generatespark, fuelburn, plasticburn, pulverize, pulverizeRed, pulverizeRedder, pulverizeSmall, pulverizeMedium,
+    redgeneratespark, generatespark, fuelburn, plasticburn, pulverize, pulverizeRed, pulverizeRedder, pulverizeSmall,pulverizeSmallTrans, pulverizeMedium,
     producesmoke, smeltsmoke, formsmoke, blastsmoke, lava, doorclose, dooropen, dooropenlarge, doorcloselarge, purify, purifyoil, purifystone, generate,
     mine, mineBig, mineHuge, smelt, teleportActivate, teleport, teleportOut, ripple, bubble, launch,
     healBlock, healBlockFull, healWaveMend, overdriveWave, overdriveBlockFull, shieldBreak, hitBulletSmall, hitFuse,
@@ -902,6 +902,13 @@ public class Fx implements ContentList{
         pulverizeSmall = new Effect(30, e -> {
             Angles.randLenVectors(e.id, 3, e.fin() * 5f, (x, y) -> {
                 Draw.color(Pal.stoneGray);
+                Fill.square(e.x + x, e.y + y, e.fout() * 1f + 0.5f, 45);
+            });
+        });
+        pulverizeSmallTrans = new Effect(30, e -> {
+            Angles.randLenVectors(e.id, 3, e.fin() * 5f, (x, y) -> {
+                Draw.color(Pal.stoneGray);
+                Draw.alpha(0.1f);
                 Fill.square(e.x + x, e.y + y, e.fout() * 1f + 0.5f, 45);
             });
         });

@@ -16,7 +16,7 @@ public interface BuilderMinerTrait extends MinerTrait, BuilderTrait{
         if(isBuilding()){
             drawBuilding();
         }else{
-            drawMining();
+            drawMining( 0.9f );
         }
     }
 }

@@ -37,7 +37,7 @@ public class Renderer implements ApplicationListener{
     public FrameBuffer shieldBuffer = new FrameBuffer(2, 2);
     private Bloom bloom;
     private Color clearColor;
-    private float targetscale = Scl.scl(4);
+    public float targetscale = Scl.scl(4);
     private float camerascale = targetscale;
     private float landscale = 0f, landTime;
     private float minZoomScl = Scl.scl(0.01f);
@@ -130,7 +130,7 @@ public class Renderer implements ApplicationListener{
                         camera.position.lerpDelta(position, 0.08f);
                     }
                 }
-            }else if(control.input instanceof DesktopInput && !state.isPaused()){
+            }else if(control.input instanceof DesktopInput && !state.isPaused() && !griefWarnings.auto.cameraOverride()){
                 camera.position.lerpDelta(position, 0.08f);
             }
 
@@ -383,13 +383,19 @@ public class Renderer implements ApplicationListener{
     }
 
     public void scaleCamera(float amount){
-        targetscale += amount;
+        targetscale += amount * targetscale * 0.25f;
         clampScale();
     }
 
     public void clampScale(){
-        float s = Scl.scl(1f);
-        targetscale = Mathf.clamp(targetscale, s * 1.5f, Math.round(s * 6));
+        if(!mobile) {
+            float s = Scl.scl(1f);
+            targetscale = Mathf.clamp(targetscale, s * 0.25f, Math.round(s * 16));
+        }
+        else {
+            float s = Scl.scl(1f);
+            targetscale = Mathf.clamp(targetscale, s * 0.8f, Math.round(s * 6));
+        }
     }
 
     public float getScale(){
@@ -441,7 +447,7 @@ public class Renderer implements ApplicationListener{
         }
         buffer.end();
         Pixmap fullPixmap = new Pixmap(w, h, Pixmap.Format.RGBA8888);
-        BufferUtils.copy(lines, 0, fullPixmap.getPixels(), lines.length);
+        Buffers.copy(lines, 0, fullPixmap.getPixels(), lines.length);
         Fi file = screenshotDirectory.child("screenshot-" + Time.millis() + ".png");
         PixmapIO.writePNG(file, fullPixmap);
         fullPixmap.dispose();

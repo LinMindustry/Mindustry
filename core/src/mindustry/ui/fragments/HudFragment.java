@@ -1,6 +1,7 @@
 package mindustry.ui.fragments;
 
 import arc.*;
+import arc.func.Prov;
 import mindustry.annotations.Annotations.*;
 import arc.struct.*;
 import arc.graphics.*;
@@ -31,6 +32,13 @@ import mindustry.type.*;
 import mindustry.ui.*;
 import mindustry.ui.Cicon;
 import mindustry.ui.dialogs.*;
+import mindustry.game.griefprevention.TileInfoHud;
+
+// CUSTOM
+import mindustry.world.Tile;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static mindustry.Vars.*;
 
@@ -41,12 +49,19 @@ public class HudFragment extends Fragment{
     private Table lastUnlockTable;
     private Table lastUnlockLayout;
     private boolean shown = true;
-    private float dsize = 47.2f;
+    // private float dsize = 47.2f;
+    private float dsize = 65f;
 
     private String hudText = "";
     private boolean showHudText;
 
     private long lastToast;
+
+    // custom
+    Table coreTable = new Table();
+    Table ecoTable = new Table();
+    Table armyTable = new Table();
+    Table enemyTable = new Table();
 
     public void build(Group parent){
 
@@ -160,7 +175,6 @@ public class HudFragment extends Fragment{
                 wavesMain.row();
                 wavesMain.table(Tex.button, t -> t.margin(10f).add(new Bar("boss.health", Pal.health, () -> state.boss() == null ? 0f : state.boss().healthf()).blink(Color.white))
                 .grow()).fillX().visible(() -> state.rules.waves && state.boss() != null).height(60f).get();
-                wavesMain.row();
             }
 
             {
@@ -250,6 +264,9 @@ public class HudFragment extends Fragment{
                 info.label(() -> fps.get(Core.graphics.getFramesPerSecond())).left().style(Styles.outlineLabel);
                 info.row();
                 info.label(() -> ping.get(netClient.getPing())).visible(net::client).left().style(Styles.outlineLabel);
+                info.row();
+                info.table(Tex.clear, t -> t.add(new Bar(() -> "Health: " + player.health + " / " + player.maxHealth(), () -> Pal.health, () -> player.health / player.maxHealth()).blink(Color.white))
+                        .grow()).fillX().width(300f).height(20f).pad(4);
             }).top().left();
         });
         
@@ -258,6 +275,18 @@ public class HudFragment extends Fragment{
             //minimap
             t.add(new Minimap());
             t.row();
+            if(Core.settings.getBool("core_table")) {
+                t.add(coreTable);
+                t.row();
+            }
+//            t.add(ecoTable);
+//            t.row();
+            if(Core.settings.getBool("army_table")) {
+                t.add(armyTable);
+                t.row();
+            }
+            buildArmyTable();
+            buildEnemyTable();
             //position
             t.label(() -> world.toTile(player.x) + "," + world.toTile(player.y))
                 .visible(() -> Core.settings.getBool("position") && !state.rules.tutorial);
@@ -343,6 +372,22 @@ public class HudFragment extends Fragment{
             t.bottom().visible(() -> control.saves.isSaving());
             t.add("$saveload").style(Styles.outlineLabel);
         });
+
+        // enemy info
+        if(Core.settings.getBool("enemy_table")) {
+            parent.fill(t -> {
+                t.top().visible(true);
+                t.add(enemyTable);
+            });
+        }
+
+        //persistent tileinfo
+        if(Core.settings.getBool("tile_info")) {
+            parent.fill(t -> {
+                t.top().visible(() -> griefWarnings.tileInfoHud);
+                t.add(new TileInfoHud());
+            });
+        }
 
         parent.fill(p -> {
             p.top().table(Styles.black3, t -> t.margin(4).label(() -> hudText)
@@ -685,5 +730,140 @@ public class HudFragment extends Fragment{
             }
         }).growY().fillX().right().width(40f)
         .visible(this::canSkipWave);
+    }
+
+    // custom army table
+    private Element unitImage(TextureRegion region, Prov<CharSequence> text){
+        Stack stack = new Stack();
+
+        Table t = new Table().left().bottom();
+        t.label(text);
+
+        stack.add(new Image(region));
+        stack.add(t);
+        return stack;
+    }
+
+    private Element itemImage(TextureRegion region, Prov<CharSequence> text){
+        Stack stack = new Stack();
+
+        Table t = new Table().left().bottom();
+        t.label(text);
+
+        stack.add(new Image(region));
+        stack.add(t);
+        return stack;
+    }
+
+    private String round(float f){
+        f = (int)f;
+        if(f >= 1000000){
+            return (int)(f / 1000000f) + "[gray]" + Core.bundle.getOrNull("unit.millions") + "[]";
+        }else if(f >= 1000){
+            return (int)(f / 1000) + Core.bundle.getOrNull("unit.thousands");
+        }else{
+            return (int)f + "";
+        }
+    }
+
+    private void buildArmyTable() {
+        Table troopTable = new Table();
+        IntSet container = new IntSet();
+
+        troopTable.background(Tex.inventory);
+        troopTable.touchable(Touchable.disabled);
+
+        int cols = 5;
+        int row = 0;
+        troopTable.margin(4f);
+        troopTable.defaults().size(8 * 5).pad(4f);
+        for (int i = 0; i < content.units().size; i++) {
+            if (i == 7 || i == 8 || i == 9 || i == 13 || i == 14) continue;
+            UnitType unit = content.units().get(i);
+            container.add(i);
+            Element image = unitImage(unit.icon(Cicon.xlarge), () -> {
+                return unitGroup.count(b -> b.getTeam() == player.getTeam() && b.getTypeID().name.equals(unit.typeID.name)) + "";
+            });
+            troopTable.add(image);
+            if (row++ % cols == cols - 1) troopTable.row();
+        }
+        troopTable.visible(true);
+        coreTable.setScale(1f, 1f);
+        ui.hudfrag.armyTable.clearChildren();
+        ui.hudfrag.armyTable.add(troopTable);
+    }
+
+    private void buildEnemyTable() {
+        Table troopTable = new Table();
+        IntSet container = new IntSet();
+
+        troopTable.background(Tex.inventory);
+        troopTable.touchable(Touchable.disabled);
+
+        int cols = 5;
+        int row = 0;
+
+        troopTable.margin(4f);
+        troopTable.defaults().size(8 * 5).pad(4f);
+        for (int i = 0; i < content.units().size; i++) {
+            UnitType unit = content.units().get(i);
+            container.add(i);
+            Element image = unitImage(unit.icon(Cicon.xlarge), () -> {
+                return unitGroup.count(b -> b.getTeam() != player.getTeam() && b.getTypeID().name.equals(unit.typeID.name)) + "";
+            });
+            troopTable.add(image);
+            if (row++ % cols == cols - 1) troopTable.row();
+        }
+        troopTable.visible(true);
+        coreTable.setScale(1f, 1f);
+        ui.hudfrag.enemyTable.clearChildren();
+        ui.hudfrag.enemyTable.add(troopTable);
+    }
+
+    public void buildCoreTable() {
+        Table coreTable = new Table();
+        IntSet container = new IntSet();
+
+        coreTable.background(Tex.inventory);
+        coreTable.touchable(Touchable.disabled);
+
+        int cols = 5;
+        int row = 0;
+
+        coreTable.margin(4f);
+        coreTable.defaults().size(8 * 5).pad(4f);
+        if(state.teams.get(player.getTeam()).cores.size == 0) {
+            return;
+        }
+        Tile core = state.teams.get(player.getTeam()).cores.first().tile;
+        if(core.block().hasItems){
+
+            for(int i = 0; i < content.items().size; i++){
+                Item item = content.item(i);
+                if(i == 4 || i == 5 || i == 8 || i == 13 || i == 14 || i ==15) continue;
+                container.add(i);
+
+                Element image = itemImage(item.icon(Cicon.xlarge), () -> {
+                    if(core == null || core.entity == null){
+                        return "";
+                    }
+                    return round(core.entity.items.get(item));
+                });
+                coreTable.add(image);
+
+                if(row++ % cols == cols - 1) coreTable.row();
+            }
+        }
+
+        if(row == 0){
+            coreTable.setSize(0f, 0f);
+        }
+
+        coreTable.visible(true);
+
+        coreTable.setScale(1f, 1f);
+
+        ui.hudfrag.coreTable.clearChildren();
+        ui.hudfrag.coreTable.add(coreTable);
     }
 }

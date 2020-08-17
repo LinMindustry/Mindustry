@@ -45,6 +45,7 @@ public class PowerNode extends PowerBlock{
 
         if(contains){
             //unlink
+            PowerGraph oldGraph = entity.power.graph;
             entity.power.links.removeValue(value);
             if(valid) other.entity.power.links.removeValue(tile.pos());
 
@@ -58,6 +59,8 @@ public class PowerNode extends PowerBlock{
                 PowerGraph og = new PowerGraph();
                 //reflow from other end
                 og.reflow(other);
+
+                griefWarnings.handlePowerGraphSplit(player, tile, oldGraph, newgraph, og);
             }
         }else if(linkValid(tile, other) && valid && entity.power.links.size < maxNodes){
 
@@ -300,11 +303,11 @@ public class PowerNode extends PowerBlock{
         return false;
     }
 
-    protected boolean overlaps(float srcx, float srcy, Tile other, float range){
+    public boolean overlaps(float srcx, float srcy, Tile other, float range){
         return Intersector.overlaps(Tmp.cr1.set(srcx, srcy, range), other.getHitbox(Tmp.r1));
     }
 
-    protected boolean overlaps(Tile src, Tile other, float range){
+    public boolean overlaps(Tile src, Tile other, float range){
         return overlaps(src.drawx(), src.drawy(), other, range);
     }
 

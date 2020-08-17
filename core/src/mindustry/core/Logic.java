@@ -16,7 +16,6 @@ import mindustry.type.*;
 import mindustry.world.*;
 import mindustry.world.blocks.*;
 import mindustry.world.blocks.BuildBlock.*;
-import mindustry.world.blocks.power.*;
 
 import java.util.*;
 
@@ -246,8 +245,8 @@ public class Logic implements ApplicationListener{
                     collisions.updatePhysics(unitGroup);
                 }
 
-
                 playerGroup.update();
+                if (griefWarnings.auto != null) griefWarnings.auto.update();
 
                 //effect group only contains item transfers in the headless version, update it!
                 if(headless){

@@ -706,8 +706,10 @@ public class MobileInput extends InputHandler implements GestureListener{
         vector.limit(maxPanSpeed);
 
         //pan view
-        Core.camera.position.x += vector.x;
-        Core.camera.position.y += vector.y;
+        if (!griefWarnings.auto.cameraOverride()) {
+            Core.camera.position.x += vector.x;
+            Core.camera.position.y += vector.y;
+        }
     }
 
     @Override

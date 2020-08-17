@@ -24,6 +24,7 @@ import mindustry.net.*;
 import mindustry.type.*;
 import mindustry.ui.*;
 import mindustry.world.*;
+import mindustry.world.blocks.storage.CoreBlock;
 
 import static mindustry.Vars.*;
 
@@ -89,7 +90,6 @@ public class BlockInventoryFragment extends Fragment{
     }
 
     private void rebuild(boolean actions){
-
         IntSet container = new IntSet();
 
         table.clearChildren();
@@ -193,6 +193,12 @@ public class BlockInventoryFragment extends Fragment{
             table.actions(Actions.scaleTo(1f, 1f, 0.07f, Interpolation.pow3Out));
         }else{
             table.setScale(1f, 1f);
+        }
+        // check all cores rebuild core table
+        for(CoreBlock.CoreEntity core : player.getTeam().cores()) {
+            if(tile.entity.id == core.id) {
+                ui.hudfrag.buildCoreTable();
+            }
         }
     }
 

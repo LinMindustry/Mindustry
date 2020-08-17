@@ -17,6 +17,7 @@ import mindustry.entities.type.*;
 import mindustry.entities.type.Bullet;
 import mindustry.gen.*;
 
+import static mindustry.Vars.griefWarnings;
 import static mindustry.Vars.net;
 
 public class Weapon{
@@ -82,6 +83,7 @@ public class Weapon{
         }
 
         shootDirect(player, x, y, rotation, left);
+        if (griefWarnings.auto != null) griefWarnings.auto.handlePlayerShoot(player, x, y, rotation);
     }
 
     @Remote(targets = Loc.server, called = Loc.both, unreliable = true)

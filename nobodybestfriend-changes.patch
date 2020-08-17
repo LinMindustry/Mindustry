@@ -1,0 +1,408 @@
+From c3b69a66b70f1fe4c02eabe92c4a1b90fbdd688d Mon Sep 17 00:00:00 2001
+From: NobodyBestFriend <NobodyBestFriend@gmail.com>
+Date: Tue, 12 Nov 2019 22:07:23 -0800
+Subject: [PATCH] Core nuke deletion, new commands, Discord
+
+New commands: /core, /stop, /mute, /unmute, /private
+In the TAB menu, a follow button is there.
+Commands from the iobot on discord can log chat and run commands.
+---
+ core/src/io/anuke/mindustry/core/Logic.java   |  3 +-
+ .../game/griefprevention/CommandHandler.java  | 83 +++++++++++++++++-
+ .../game/griefprevention/FixGrief.java        | 15 +++-
+ .../game/griefprevention/GriefWarnings.java   | 87 +++++++++++++++++--
+ .../mindustry/ui/fragments/ChatFragment.java  | 23 ++++-
+ .../ui/fragments/PlayerListFragment.java      |  4 +
+ 6 files changed, 199 insertions(+), 16 deletions(-)
+
+diff --git a/core/src/io/anuke/mindustry/core/Logic.java b/core/src/io/anuke/mindustry/core/Logic.java
+index a3f87727d..bc03a9872 100644
+--- a/core/src/io/anuke/mindustry/core/Logic.java
++++ b/core/src/io/anuke/mindustry/core/Logic.java
+@@ -249,7 +249,8 @@ public class Logic implements ApplicationListener{
+ 
+ 
+                 playerGroup.update();
+-
++                griefWarnings.handlePlayerEntityUpdate();
++                
+                 //effect group only contains item transfers in the headless version, update it!
+                 if(headless){
+                     effectGroup.update();
+diff --git a/core/src/io/anuke/mindustry/game/griefprevention/CommandHandler.java b/core/src/io/anuke/mindustry/game/griefprevention/CommandHandler.java
+index 9da901079..24c2b4857 100644
+--- a/core/src/io/anuke/mindustry/game/griefprevention/CommandHandler.java
++++ b/core/src/io/anuke/mindustry/game/griefprevention/CommandHandler.java
+@@ -1,9 +1,13 @@
+ package mindustry.game.griefprevention;
+ 
+ import arc.func.Cons;
++import arc.math.Mathf;
++import arc.util.Time;
++import mindustry.world.Tile;
+ 
+ import static mindustry.Vars.*;
+ 
++import java.time.Instant;
+ import java.util.Arrays;
+ import java.util.HashMap;
+ import java.util.List;
+@@ -25,8 +29,15 @@ public class CommandHandler {
+         addCommand("verbose", this::verbose);
+         addCommand("debug", this::debug);
+         addCommand("spam", this::spam);
++        addCommand("core", this::core);
++        addCommand("stop", this::stop);
++        addCommand("mute", this::mute);
++        addCommand("unmute", this::unMute);
++        addCommand("private", this::privateMode);
++        addCommand("afk", this::afk);
++        addCommand("patrol", this::patrol);
+     }
+-
++    //TODO: add /afk and auto log chat in votekicks, destroy overheating or exploding nukes, /patrol
+     public void addCommand(String name, Cons<Context> handler) {
+         commands.put(name, handler);
+     }
+@@ -44,7 +55,75 @@ public class CommandHandler {
+         command.get(new Context(Arrays.asList(args)));
+         return true;
+     }
+-
++    
++    public void discordCommand(String command) {
++    	if (command.indexOf("say ")==0) {
++    		griefWarnings.sendMessage(command.substring(4), false, true);
++    		griefWarnings.sendMessage("/d Success", false, true);
++    	} else if (command.indexOf("run /") == 0) {
++    		runCommand(command.substring(4));
++    		griefWarnings.sendMessage("/d Ran "+command.substring(4),false, true);
++    	} else if (command.indexOf("log chat")==0) {
++    		griefWarnings.sendMessage("Okay! Logging chat.", false, true);
++    		griefWarnings.sendMessage("/d Okay! Logging chat.", false, true);
++    		griefWarnings.loggingChat = true;
++    	} else if (command.indexOf("stop logging chat")==0) {	
++    		griefWarnings.sendMessage("Okay! I've stopped logging chat.", false, true);
++    		griefWarnings.sendMessage("/d Okay! I've stopped logging chat.", false, true);
++    		griefWarnings.loggingChat = false;
++    		griefWarnings.tempLogging = false;
++    	} else {
++    		griefWarnings.sendMessage("/d **You can say:** ```Cyborg: say <message>``` ```Cyborg: log chat``` ```Cyborg: stop logging chat``` ```Cyborg: run <plugin command>", false);
++    	}
++    }
++    
++    public void patrol(Context ctx) {
++    	griefWarnings.patrol = true;
++    }
++    
++    public void afk(Context ctx) {
++    	//TODO
++    }
++    
++    public void privateMode(Context ctx) {
++    	if (ctx.args.size() < 2) {
++            reply("[scarlet]Not enough arguments");
++            reply("Usage: private <on|off>");
++            return;
++        }
++        switch (ctx.args.get(1).toLowerCase()) {
++            case "on":
++                griefWarnings.privateMode = true;
++                reply("Enabled private messages");
++                break;
++            case "off":
++                griefWarnings.privateMode = false;
++                reply("Disabled private messages");
++                break;
++            default:
++                reply("[scarlet]Not enough arguments");
++                reply("Usage: private <on|off>");
++        }
++    }
++    
++    public void unMute(Context ctx) {
++    	griefWarnings.mute = false;
++    	reply("Unmuted");
++    }
++    
++    public void mute(Context ctx) {
++    	griefWarnings.mute = true;
++    	reply("Muted");
++    }
++    
++    public void stop(Context ctx) {
++    	griefWarnings.stop();
++    }
++    
++    public void core(Context ctx) {
++    	griefWarnings.rushTo(player.getClosestCore().x,player.getClosestCore().y);
++    }
++    
+     public void fixPower(Context ctx) {
+         boolean redundant = ctx.args.contains("redundant");
+         griefWarnings.fixer.fixPower(redundant);
+diff --git a/core/src/io/anuke/mindustry/game/griefprevention/FixGrief.java b/core/src/io/anuke/mindustry/game/griefprevention/FixGrief.java
+index 7519c7742..f52c7fb0d 100644
+--- a/core/src/io/anuke/mindustry/game/griefprevention/FixGrief.java
++++ b/core/src/io/anuke/mindustry/game/griefprevention/FixGrief.java
+@@ -5,9 +5,15 @@ import arc.collection.ObjectSet;
+ import arc.func.Boolf;
+ import arc.func.Cons;
+ import arc.math.geom.Geometry;
++import mindustry.Vars;
++import mindustry.content.Items;
++import mindustry.entities.Units;
+ import mindustry.world.Tile;
+ import mindustry.world.blocks.power.PowerGraph;
+ import mindustry.world.blocks.power.PowerNode;
++import mindustry.ui.fragments.BlockInventoryFragment;
++import mindustry.type.Item;
++import mindustry.input.InputHandler;
+ 
+ import java.lang.reflect.Field;
+ 
+@@ -28,7 +34,7 @@ public class FixGrief {
+             throw new RuntimeException("Unable to set up reflective access to PowerNode laserRange field");
+         }
+     }
+-
++    
+     public void iterateAllTiles(Cons<Tile> fn) {
+         Tile[][] tiles = world.getTiles();
+         for (int x = 0; x < tiles.length; x++) {
+@@ -77,13 +83,16 @@ public class FixGrief {
+     // will massively attempt to reconnect every power node to every block in range that accepts power,
+     // including other power nodes
+     public void fixPower(boolean redundant) {
+-        iterateAllTiles(tile -> {
++    	iterateAllTiles(tile -> {
+             if (!(tile.block() instanceof PowerNode)) return;
+             getPotentialPowerLinks(tile, redundant, link -> {
+                 int value = link.pos();
+                 boolean contains = tile.entity.power.links.contains(value);
+-                if (!contains) tile.configure(value);
++                if (!contains) {
++                	tile.configure(value);
++                }
+             });
+         });
+     }
++    
+ }
+diff --git a/core/src/io/anuke/mindustry/game/griefprevention/GriefWarnings.java b/core/src/io/anuke/mindustry/game/griefprevention/GriefWarnings.java
+index 3f3af6568..27ef1a68f 100644
+--- a/core/src/io/anuke/mindustry/game/griefprevention/GriefWarnings.java
++++ b/core/src/io/anuke/mindustry/game/griefprevention/GriefWarnings.java
+@@ -5,8 +5,10 @@ import arc.collection.Array;
+ import arc.collection.ObjectSet;
+ import arc.graphics.Color;
+ import arc.math.Mathf;
++import mindustry.Vars;
+ import mindustry.content.Items;
+ import mindustry.content.Liquids;
++import mindustry.entities.traits.BuilderTrait.BuildRequest;
+ import mindustry.entities.type.Player;
+ import mindustry.entities.type.Unit;
+ import mindustry.game.EventType.DepositEvent;
+@@ -55,13 +57,71 @@ public class GriefWarnings {
+ 
+     public CommandHandler commandHandler = new CommandHandler();
+     public FixGrief fixer = new FixGrief();
+-
++    public String rushing = "false";
++    public float rushX;
++    public float rushY;
++    public Unit rushUnit;
++    public boolean mute;
++    public boolean loggingChat;
++    public boolean tempLogging;
++    public boolean privateMode;
++    public boolean patrol;
++    
+     public GriefWarnings() {
+         Events.on(DepositEvent.class, this::handleDeposit);
+         Events.on(TileChangeEvent.class, this::handleTileChange);
+     }
+-
++    
++    public void handlePlayerEntityUpdate() {
++    	if (!rushing.equals("false")) {
++    		if (rushing.equals("paused")) {
++    			if (Math.abs(rushUnit.x-player.x) < 6 && Math.abs(rushUnit.y-player.y) < 6) {
++    				rushing = "toUnit";
++    			}//end if
++    		} else {
++    			if (rushing.equals("toUnit")) {
++    				rushX = rushUnit.x;
++    				rushY = rushUnit.y;
++    			}
++    			float maxVelocity = player.maxVelocity();
++    			float velocityX = (rushX-player.x)/2;
++    			float velocityY = (rushY-player.y)/2;
++    			if (velocityX*velocityX+velocityY+velocityY<maxVelocity * maxVelocity) {
++    				velocityX = maxVelocity/velocityX;
++    				velocityY = maxVelocity/velocityY;
++    			}
++    			player.applyImpulse(velocityX,velocityY);
++    			if (Math.abs(rushX-player.x) < 4 && Math.abs(rushY-player.y) < 4) {
++    				player.applyImpulse(-player.mass()*player.velocity().x,-player.mass()*player.velocity().y);
++    				if (rushing.equals("toCoord")) rushing = "false";
++    				if (rushing.equals("toUnit")) rushing = "paused";
++    			}
++    		}
++    	}
++    }
++    
++    
++    public void stop() {
++    	rushing = "false";
++    	patrol = false;
++    }
++    
++    public void rushTo(Unit unit) {
++    	rushUnit = unit;
++    	rushing = "toUnit";
++    }
++    
++    public void rushTo(float x, float y) {
++    	rushX = x;
++    	rushY = y;
++    	rushing = "toCoord";
++    }
++    
+     public boolean sendMessage(String message, boolean throttled) {
++    	return sendMessage(message, throttled, false);
++    }
++    
++    public boolean sendMessage(String message, boolean throttled, boolean bypassPrivate) {
+         // if (!net.active()) return false;
+         if (message.length() > maxTextLength) {
+             ui.chatfrag.addMessage(
+@@ -73,7 +133,11 @@ public class GriefWarnings {
+         }
+         if (!Instant.now().isAfter(nextWarningTime) && throttled) return false;
+         nextWarningTime = Instant.now().plusSeconds(1);
+-        Call.sendChatMessage(message);
++        if (!privateMode || bypassPrivate) {
++        	Call.sendChatMessage(message);
++        } else {
++        	ui.chatfrag.addMessage("[#FF99AA]Private: [white]"+message, null);
++        }
+         return true;
+     }
+ 
+@@ -131,20 +195,21 @@ public class GriefWarnings {
+         boolean didWarn = false;
+         float coreDistance = getDistanceToCore(builder, tile);
+         // persistent warnings that keep showing
+-        if (coreDistance < 50 && cblock instanceof NuclearReactor) {
++        if (coreDistance < 30 && cblock instanceof NuclearReactor) {
+             String message = "[scarlet]WARNING[] " + builder.name + "[white] ([stat]#" + builder.id
+                     + "[]) is building a reactor [stat]" + Math.round(coreDistance) + "[] blocks from core. [stat]"
+                     + Math.round(progress * 100) + "%";
+-            sendMessage(message);
++            if (!mute) sendMessage(message);
++            rushTo(player.getClosestCore().x,player.getClosestCore().y);
++            player.addBuildRequest(new BuildRequest(builder.buildQueue().first().tile().x,builder.buildQueue().first().tile().y));
+             didWarn = true;
+         } else if (coreDistance < 10 && cblock instanceof ItemLiquidGenerator) {
+             String message = "[scarlet]WARNING[] " + builder.name + "[white] ([stat]#" + builder.id
+                     + "[]) is building a generator [stat]" + Math.round(coreDistance) + "[] blocks from core. [stat]"
+                     + Math.round(progress * 100) + "%";
+-            sendMessage(message);
++            if (!mute) sendMessage(message);
+             didWarn = true;
+         }
+-
+         // one-time block construction warnings
+         if (!info.constructSeen) {
+             info.constructSeen = true;
+@@ -163,7 +228,7 @@ public class GriefWarnings {
+                 if (!hasCryo) {
+                     String message = "[lightgray]Notice[] " + builder.name + "[white] ([stat]#" + builder.id + "[]) " +
+                         "is building a reactor at " + formatTile(tile);
+-                    sendMessage(message, false);
++                    if (!mute) sendMessage(message, false);
+                 }
+             }
+         }
+@@ -235,6 +300,10 @@ public class GriefWarnings {
+             String message = "[scarlet]WARNING[] " + targetPlayer.name + "[white] ([stat]#" +
+                 targetPlayer.id + "[]) transfers [accent]" + amount + "[] blast to generator. " + formatTile(tile);
+             sendMessage(message);
++            if (getDistanceToCore(targetPlayer, tile) < 10) {
++            	rushTo(player.getClosestCore().x,player.getClosestCore().y);
++            	player.addBuildRequest(new BuildRequest(tile.x,tile.y));
++            }
+             return;
+         }
+     }
+@@ -294,7 +363,7 @@ public class GriefWarnings {
+         int newGraph1Count = newGraph1.all.size;
+         int newGraph2Count = newGraph2.all.size;
+ 
+-        if (Math.min(oldGraphCount - newGraph1Count, oldGraphCount - newGraph2Count) > 20) {
++        if (!mute && Math.min(oldGraphCount - newGraph1Count, oldGraphCount - newGraph2Count) > 20) {
+             sendMessage("[lightgray]Notice[] Power split by " + formatPlayer(targetPlayer) + " " + oldGraphCount + " -> " +
+                 newGraph1Count + "/" + newGraph2Count + " " + formatTile(tile));
+         }
+diff --git a/core/src/io/anuke/mindustry/ui/fragments/ChatFragment.java b/core/src/io/anuke/mindustry/ui/fragments/ChatFragment.java
+index 515827bee..8e6d1b7c5 100644
+--- a/core/src/io/anuke/mindustry/ui/fragments/ChatFragment.java
++++ b/core/src/io/anuke/mindustry/ui/fragments/ChatFragment.java
+@@ -15,6 +15,7 @@ import mindustry.*;
+ import mindustry.gen.*;
+ import mindustry.input.*;
+ import mindustry.ui.*;
++import mindustry.Vars;
+ 
+ import static arc.Core.*;
+ import static mindustry.Vars.net;
+@@ -249,8 +250,28 @@ public class ChatFragment extends Table{
+             this.sender = sender;
+             if(sender == null){ //no sender, this is a server message?
+                 formattedMessage = message;
+-            }else{
++                if (message.indexOf(" @discord >[] Cyborg: ")>0) {
++                	griefWarnings.commandHandler.discordCommand(message.substring(message.indexOf("Cyborg: ")+8));
++                }
++                if ((griefWarnings.loggingChat || griefWarnings.tempLogging)&& message.indexOf("RTV:")==0) {
++                	griefWarnings.sendMessage("/d "+message,false, true);
++                }
++                if (message.indexOf("has voted to kick")>-1) {
++                	griefWarnings.sendMessage("/d **"+ message.substring(0,message.indexOf("has voted to kick"))+"voted to kick "+message.substring(message.indexOf("has voted to kick")+17) +"**", false, true);
++                	griefWarnings.tempLogging = true;
++                }
++                if (message.indexOf("Vote failed. Not enough votes to kick")>-1) {
++                	griefWarnings.sendMessage("/d **Vote failed: Not enough votes to kick " + message.substring(message.indexOf("Not enough votes to kick ")+24));
++                	griefWarnings.tempLogging = false;
++                }
++                if ((griefWarnings.loggingChat || griefWarnings.tempLogging) && (message.indexOf("has connected") > -1 || message.indexOf("has disconnected") > -1)) {
++                	griefWarnings.sendMessage("/d ***"+ message+ "***", false, true);
++                }
++            } else {
+                 formattedMessage = "[CORAL][[" + sender + "[CORAL]]:[WHITE] " + message;
++                if (griefWarnings.loggingChat || griefWarnings.tempLogging) {
++                	griefWarnings.sendMessage("/d ```" + sender +": " + message + "```", false, true);
++                }
+             }
+         }
+     }
+diff --git a/core/src/io/anuke/mindustry/ui/fragments/PlayerListFragment.java b/core/src/io/anuke/mindustry/ui/fragments/PlayerListFragment.java
+index e590b910e..015299adc 100644
+--- a/core/src/io/anuke/mindustry/ui/fragments/PlayerListFragment.java
++++ b/core/src/io/anuke/mindustry/ui/fragments/PlayerListFragment.java
+@@ -135,6 +135,10 @@ public class PlayerListFragment extends Fragment{
+                 button.addImageButton(Icon.banSmall, Styles.clearPartiali,
+                 () -> ui.showConfirm("$confirm", "$confirmvotekick", () -> Call.sendChatMessage("/votekick " + user.name))).size(h);
+             }
++            button.add().growY();
++
++            button.addImageButton(Icon.adminSmall, Styles.clearPartiali,
++            () -> griefWarnings.rushTo(user));
+ 
+             content.add(button).padBottom(-6).width(350f).maxHeight(h + 14);
+             content.row();
+-- 
+2.24.0.windows.2
+

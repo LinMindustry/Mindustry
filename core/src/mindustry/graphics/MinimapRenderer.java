@@ -101,7 +101,7 @@ public class MinimapRenderer implements Disposable{
                 Player pl = (Player) unit;
                 if(!pl.isLocal){
                     // Only display names for other players.
-                    drawLabel(x + rx, y + ry, pl.name, unit.getTeam().color);
+                    drawLabel(x + rx, y + ry, pl.name + pl.addedinfo, unit.getTeam().color);
                 }
             }
         }

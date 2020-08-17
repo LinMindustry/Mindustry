@@ -53,9 +53,13 @@ public interface Platform{
     }
 
     default Context getScriptContext(){
-        Context c = Context.enter();
+        Context c = enterScriptContext(null);
         c.setOptimizationLevel(9);
         return c;
+    }
+
+    default Context enterScriptContext(Context ctx){
+        return ContextFactory.getGlobal().enterContext(ctx);
     }
 
     /** Add a text input dialog that should show up after the field is tapped. */

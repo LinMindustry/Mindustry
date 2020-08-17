@@ -1,5 +1,6 @@
 package mindustry.entities.type.base;
 
+import arc.Core;
 import arc.graphics.*;
 import arc.graphics.g2d.*;
 import arc.math.*;
@@ -124,8 +125,33 @@ public class GroundUnit extends BaseUnit{
         return type.weapon;
     }
 
+    public boolean isSameTeam(){
+        return player.getTeam() == this.team;
+    }
+    public float opacityAlly = Core.settings.getInt("allyFlyingUnitsOpacity") / 100f;
+    public float opacityEnemy = Core.settings.getInt("enemyFlyingUnitsOpacity") / 100f;
+    private float getOpacitySettings(){
+        float opacity1=0.99f ;
+        if (isSameTeam()){
+            opacity1 = opacityAlly;
+        }else{
+            opacity1 = opacityEnemy;
+        }
+        return opacity1;
+    }
+    private float opacity = getOpacitySettings();
+
+    @Override
+    public void drawShadow(float offsetX, float offsetY) {
+        //if (opacity ==0.0f){return;}
+        Draw.alpha(opacity);
+        super.drawShadow(offsetX, offsetY);
+    }
+
     @Override
     public void draw(){
+        //if (opacity ==0.0f){return;}
+        Draw.alpha(opacity);
         Draw.mixcol(Color.white, hitTime / hitDuration);
 
         float ft = Mathf.sin(walkTime * type.speed * 5f, 6f, 2f + type.hitsize / 15f);
@@ -133,10 +159,12 @@ public class GroundUnit extends BaseUnit{
         Floor floor = getFloorOn();
 
         if(floor.isLiquid){
+            Draw.alpha(opacity);
             Draw.color(Color.white, floor.color, 0.5f);
         }
 
         for(int i : Mathf.signs){
+            Draw.alpha(opacity);
             Draw.rect(type.legRegion,
             x + Angles.trnsx(baseRotation, ft * i),
             y + Angles.trnsy(baseRotation, ft * i),
@@ -144,24 +172,28 @@ public class GroundUnit extends BaseUnit{
         }
 
         if(floor.isLiquid){
+            Draw.alpha(opacity);
             Draw.color(Color.white, floor.color, drownTime * 0.4f);
         }else{
+            Draw.alpha(opacity);
             Draw.color(Color.white);
         }
-
+        Draw.alpha(opacity);
         Draw.rect(type.baseRegion, x, y, baseRotation - 90);
-
+        Draw.alpha(opacity);
         Draw.rect(type.region, x, y, rotation - 90);
 
         for(int i : Mathf.signs){
             float tra = rotation - 90, trY = -type.weapon.getRecoil(this, i > 0) + type.weaponOffsetY;
             float w = -i * type.weapon.region.getWidth() * Draw.scl;
+            Draw.alpha(opacity);
             Draw.rect(type.weapon.region,
             x + Angles.trnsx(tra, getWeapon().width * i, trY),
             y + Angles.trnsy(tra, getWeapon().width * i, trY), w, type.weapon.region.getHeight() * Draw.scl, rotation - 90);
         }
-
+        Draw.alpha(opacity);
         Draw.mixcol();
+        Draw.reset();
     }
 
     @Override

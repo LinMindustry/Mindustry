@@ -16,6 +16,11 @@ import mindustry.game.EventType.*;
 import mindustry.gen.*;
 import mindustry.graphics.*;
 import mindustry.ui.*;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.URL;
 
 import static mindustry.Vars.*;
 
@@ -177,6 +182,31 @@ public class MenuFragment extends Fragment{
                 //new Buttoni("$schematics", Icon.paste, ui.schematics::show),
                 new Buttoni("$settings", Icon.settings, ui.settings::show),
                 new Buttoni("$about.button", Icon.info, ui.about::show),
+                new Buttoni("upgrade :P", Icon.admin, () -> {
+                    String version = "V1.1";
+                    try{
+                        URL url = new URL("https://linmindustry.github.io/update.json");
+                        // read text returned by server
+                        BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+
+                        String line = in.readLine();
+                        in.close();
+                        JSONObject obj = new JSONObject(line);
+                        String currentVersion = obj.getString("LatestVerison");
+                        if(!currentVersion.equals(version)) {
+                            String downloadlink = obj.getString("Url");
+                            String updatedate = obj.getString("UpdateTime");
+                            String updatelog = obj.getString("ReleaseNote");
+                            ui.updateDialog.show("An update found!\nRelease Date: " + updatedate + "\n----- Update log -----\n" + updatelog, downloadlink);
+                        }
+                        else {
+                            ui.updateDialog.show("No update found. Thanks for using. Click \"Cancel\" to quit.\n:P", obj.getString("Url"));
+                        }
+                    }
+                    catch(Exception e) {
+                        System.out.println(e + "\nNot able to fetch update log.\n");
+                    }
+                }),
                 new Buttoni("$quit", Icon.exit, Core.app::exit)
             );
 

@@ -1,8 +1,8 @@
 package mindustry.world.blocks.power;
 
 import arc.*;
-import arc.struct.*;
 import arc.math.*;
+import arc.struct.*;
 import arc.util.*;
 import mindustry.world.*;
 import mindustry.world.consumers.*;
@@ -13,10 +13,10 @@ public class PowerGraph{
     private final static Array<Tile> outArray2 = new Array<>();
     private final static IntSet closedSet = new IntSet();
 
-    private final ObjectSet<Tile> producers = new ObjectSet<>();
-    private final ObjectSet<Tile> consumers = new ObjectSet<>();
-    private final ObjectSet<Tile> batteries = new ObjectSet<>();
-    private final ObjectSet<Tile> all = new ObjectSet<>();
+    public final ObjectSet<Tile> producers = new ObjectSet<>();
+    public final ObjectSet<Tile> consumers = new ObjectSet<>();
+    public final ObjectSet<Tile> batteries = new ObjectSet<>();
+    public final ObjectSet<Tile> all = new ObjectSet<>();
 
     private final WindowedMean powerBalance = new WindowedMean(60);
     private float lastPowerProduced, lastPowerNeeded, lastUsageFraction;
@@ -199,6 +199,8 @@ public class PowerGraph{
         lastPowerNeeded = powerNeeded;
         lastPowerProduced = powerProduced;
 
+        powerBalance.addValue((lastPowerProduced - lastPowerNeeded) / Time.delta());
+
         if(!(consumers.size == 0 && producers.size == 0 && batteries.size == 0)){
 
             if(!Mathf.equal(powerNeeded, powerProduced)){
@@ -213,8 +215,6 @@ public class PowerGraph{
 
             distributePower(powerNeeded, powerProduced);
         }
-
-        powerBalance.addValue((lastPowerProduced - lastPowerNeeded) / Time.delta());
 
         //overproducing: 10 / 20 = 0.5
         //underproducing: 20 / 10 = 2 -> clamp -> 1.0

@@ -3,6 +3,7 @@ package mindustry.ui.dialogs;
 import arc.*;
 import arc.input.*;
 import mindustry.core.GameState.*;
+import mindustry.entities.type.Player;
 import mindustry.gen.*;
 
 import static mindustry.Vars.*;
@@ -53,6 +54,19 @@ public class PausedDialog extends FloatingDialog{
                     cont.row();
                     cont.addImageTextButton("$savegame", Icon.save, save::show);
                     cont.addImageTextButton("$loadgame", Icon.upload, load::show).disabled(b -> net.active());
+                    cont.row();
+                    cont.addImageTextButton("History", Icon.book, () -> {
+                        Call.sendChatMessage("/history");
+                    });
+                    cont.addImageTextButton("/freecam off", Icon.pencil, () -> {
+                        for(Player user: playerGroup){
+                            if(user.onKick) {
+                                // reset freecam
+                                user.onKick = false;
+                            }
+                        }
+                        griefWarnings.commandHandler.runCommand("/freecam off");
+                    });
                 }
 
                 cont.row();
@@ -82,7 +96,21 @@ public class PausedDialog extends FloatingDialog{
             if(!world.isZone() && !state.isEditor()){
                 cont.addRowImageTextButton("$save", Icon.save, save::show);
 
+                cont.addRowImageTextButton("History", Icon.book, () -> {
+                    Call.sendChatMessage("/history");
+                });
+
                 cont.row();
+
+                cont.addRowImageTextButton("Freecam", Icon.zoom, () -> {
+                    for(Player user: playerGroup){
+                        if(user.onKick) {
+                            // reset freecam
+                            user.onKick = false;
+                        }
+                    }
+                    griefWarnings.commandHandler.runCommand("/freecam off");
+                });
 
                 cont.addRowImageTextButton("$load", Icon.download, load::show).disabled(b -> net.active());
             }else{

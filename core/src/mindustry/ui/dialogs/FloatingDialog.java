@@ -64,4 +64,9 @@ public class FloatingDialog extends Dialog{
             }
         });
     }
+
+    public void addOkButton(Runnable task) {
+        buttons.defaults().size(210f, 64f);
+        buttons.addImageTextButton("OK", Icon.right, task).size(210f, 64f);
+    }
 }

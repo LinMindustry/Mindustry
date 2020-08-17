@@ -122,7 +122,7 @@ public class OverlayRenderer{
             Vec2 vec = Core.input.mouseWorld(input.getMouseX(), input.getMouseY());
             Tile tile = world.ltileWorld(vec.x, vec.y);
 
-            if(tile != null && tile.block() != Blocks.air && tile.getTeam() == player.getTeam()){
+            if(tile != null && tile.block() != Blocks.air){
                 tile.block().drawSelect(tile);
 
                 if(Core.input.keyDown(Binding.rotateplaced) && tile.block().rotate && tile.interactable(player.getTeam())){

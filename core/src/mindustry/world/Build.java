@@ -32,6 +32,8 @@ public class Build{
             prevPercent = tile.entity.healthf();
         }
 
+        griefWarnings.handleBeginBreak(tile);
+
         int rotation = tile.rotation();
         Block previous = tile.block();
         Block sub = BuildBlock.get(previous.size);
@@ -54,6 +56,8 @@ public class Build{
 
         //just in case
         if(tile == null) return;
+
+        griefWarnings.handleBeginPlace(tile, result, rotation);
 
         Block previous = tile.block();
         Block sub = BuildBlock.get(result.size);
@@ -87,7 +91,7 @@ public class Build{
         if(tile == null) return false;
 
         if(type.isMultiblock()){
-            if(type.canReplace(tile.block()) && tile.block().size == type.size && type.canPlaceOn(tile) && tile.interactable(team)){
+            if((type.canReplace(tile.block()) || (tile.block instanceof BuildBlock && tile.<BuildEntity>ent().cblock == type)) && tile.block().size == type.size && type.canPlaceOn(tile) && tile.interactable(team)){
                 return true;
             }
 
@@ -117,7 +121,7 @@ public class Build{
             && contactsGround(tile.x, tile.y, type)
             && (!tile.floor().isDeep() || type.floating)
             && tile.floor().placeableOn
-            && ((type.canReplace(tile.block())
+            && (((type.canReplace(tile.block()) || (tile.block instanceof BuildBlock && tile.<BuildEntity>ent().cblock == type))
             && !(type == tile.block() && rotation == tile.rotation() && type.rotate)) || tile.block().alwaysReplace || tile.block() == Blocks.air)
             && tile.block().isMultiblock() == type.isMultiblock() && type.canPlaceOn(tile);
         }

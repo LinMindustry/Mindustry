@@ -1,5 +1,6 @@
 package mindustry.entities.type.base;
 
+import arc.Core;
 import arc.graphics.*;
 import arc.graphics.g2d.*;
 import arc.math.*;
@@ -13,6 +14,7 @@ import mindustry.entities.units.*;
 import mindustry.graphics.*;
 import mindustry.world.*;
 import mindustry.world.meta.*;
+
 
 import static mindustry.Vars.*;
 
@@ -134,40 +136,80 @@ public class FlyingUnit extends BaseUnit{
         }
         wobble();
     }
+    public boolean isSameTeam(){
+        return player.getTeam() == this.team;
+    }
+    //private final static Logger LOGGER = Logger.getLogger(FlyingUnit.class.getName());
+    public float opacityAlly = Core.settings.getInt("allyFlyingUnitsOpacity") / 100f;
+    public float opacityEnemy = Core.settings.getInt("enemyFlyingUnitsOpacity") / 100f;
+    public float opacityFlyingShadow = Core.settings.getInt("shadowFlyingOpacity") / 100f;
+    private float getOpacitySettings(){
+        float opacity1 =0.99f;
+        //log_info("Flying units"+this.getTeam().id +opacity1);
+        if (isSameTeam()){
+            opacity1 = opacityAlly;
+        }else{
+            opacity1 = opacityEnemy;
+        }
+        //log_info("changed opacity"+this.getTeam().id+opacity1 );
+        return opacity1;
+    }
+    private float opacity = getOpacitySettings();
+    public void log_info(String text){
+        Log.info("FlyingUnit.java: "+text);
+    }
 
     @Override
     public void drawUnder(){
-        drawEngine();
+        //if (opacity==0.0f){return;}
+        drawEngine(opacity);
     }
 
     @Override
     public void draw(){
+        //if (opacity ==0.0f){return;}
+        Draw.alpha(opacity);
         Draw.mixcol(Color.white, hitTime / hitDuration);
+        Draw.alpha(opacity);
         Draw.rect(type.region, x, y, rotation - 90);
-
+        Draw.alpha(opacity);
         drawWeapons();
-
+        Draw.alpha(opacity);
         Draw.mixcol();
     }
 
+    @Override
+    public void drawShadow(float offsetX, float offsetY) {
+        //if (opacity ==0.0f){return;}
+        //log_info("changed in shadow opacity"+this.getTeam().id+" "+opacity );
+        Draw.alpha(opacityFlyingShadow);
+        super.drawShadow(offsetX, offsetY);
+    }
+
     public void drawWeapons(){
+        //if (opacity ==0.0f){return;}
         for(int i : Mathf.signs){
             float tra = rotation - 90, trY = -type.weapon.getRecoil(this, i > 0) + type.weaponOffsetY;
             float w = -i * type.weapon.region.getWidth() * Draw.scl;
+            Draw.alpha(opacity);
             Draw.rect(type.weapon.region,
             x + Angles.trnsx(tra, getWeapon().width * i, trY),
             y + Angles.trnsy(tra, getWeapon().width * i, trY), w, type.weapon.region.getHeight() * Draw.scl, rotation - 90);
         }
     }
 
-    public void drawEngine(){
+    public void drawEngine(float opacity1){
+        Draw.alpha(opacity);
         Draw.color(Pal.engine);
+        Draw.alpha(opacity);
         Fill.circle(x + Angles.trnsx(rotation + 180, type.engineOffset), y + Angles.trnsy(rotation + 180, type.engineOffset),
         type.engineSize + Mathf.absin(Time.time(), 2f, type.engineSize / 4f));
-
+        Draw.alpha(opacity);
         Draw.color(Color.white);
+        Draw.alpha(opacity);
         Fill.circle(x + Angles.trnsx(rotation + 180, type.engineOffset - 1f), y + Angles.trnsy(rotation + 180, type.engineOffset - 1f),
         (type.engineSize + Mathf.absin(Time.time(), 2f, type.engineSize / 4f)) / 2f);
+        Draw.alpha(opacity);
         Draw.color();
     }
 

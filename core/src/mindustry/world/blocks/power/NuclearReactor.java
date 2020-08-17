@@ -107,6 +107,8 @@ public class NuclearReactor extends PowerGenerator{
             }
         }
 
+        griefWarnings.handleThoriumReactorHeat(tile, entity.heat);
+
         entity.heat = Mathf.clamp(entity.heat);
 
         if(entity.heat >= 0.999f){

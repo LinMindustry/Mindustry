@@ -67,7 +67,6 @@ public interface MinerTrait extends Entity{
             unit.rotation = Mathf.slerpDelta(unit.rotation, unit.angleTo(tile.worldx(), tile.worldy()), 0.4f);
 
             if(Mathf.chance(Time.delta() * (0.06 - item.hardness * 0.01) * getMinePower())){
-
                 if(unit.dst(core) < mineTransferRange && core.tile.block().acceptStack(item, 1, core.tile, unit) == 1 && offloadImmediately()){
                     Call.transferItemTo(item, 1,
                             tile.worldx() + Mathf.range(tilesize / 2f),
@@ -81,39 +80,48 @@ public interface MinerTrait extends Entity{
                 }
             }
 
-            if(Mathf.chance(0.06 * Time.delta())){
-                Effects.effect(Fx.pulverizeSmall,
-                        tile.worldx() + Mathf.range(tilesize / 2f),
-                        tile.worldy() + Mathf.range(tilesize / 2f), 0f, item.color);
-            }
+            drawPulver(tile,item);
         }
     }
 
-    default void drawMining(){
+    default void drawPulver(Tile tile,Item item){
+        if(Mathf.chance(0.06 * Time.delta())){
+            Effects.effect(Fx.pulverizeSmall,
+                    tile.worldx() + Mathf.range(tilesize / 2f),
+                    tile.worldy() + Mathf.range(tilesize / 2f), 0f, item.color);
+        }
+    }
+
+    default void drawMining( float opacity){
+        // custom
+        // alittle bit of mine laser pls (its hard to see if mine actually happens)
         Unit unit = (Unit)this;
         Tile tile = getMineTile();
 
         if(tile == null) return;
 
-        float focusLen = 4f + Mathf.absin(Time.time(), 1.1f, 0.5f);
-        float swingScl = 12f, swingMag = tilesize / 8f;
+        float focusLen = 4f ;//+ Mathf.absin(Time.time(), 1.1f, 0.5f);
+        //float swingScl = 12f, swingMag = tilesize / 8f;
         float flashScl = 0.3f;
 
         float px = unit.x + Angles.trnsx(unit.rotation, focusLen);
         float py = unit.y + Angles.trnsy(unit.rotation, focusLen);
 
-        float ex = tile.worldx() + Mathf.sin(Time.time() + 48, swingScl, swingMag);
-        float ey = tile.worldy() + Mathf.sin(Time.time() + 48, swingScl + 2f, swingMag);
-
+        float ex = tile.worldx() ;//+ Mathf.sin(Time.time() + 48, swingScl, swingMag);
+        float ey = tile.worldy() ;//+ Mathf.sin(Time.time() + 48, swingScl + 2f, swingMag);
+        Draw.alpha( opacity);
         Draw.color(Color.lightGray, Color.white, 1f - flashScl + Mathf.absin(Time.time(), 0.5f, flashScl));
-
-        Drawf.laser(Core.atlas.find("minelaser"), Core.atlas.find("minelaser-end"), px, py, ex, ey, 0.75f);
+        Draw.alpha( opacity); // this is all it takes to change opacity
+        Drawf.laser(Core.atlas.find("minelaser"), Core.atlas.find("minelaser-end"), px, py, ex, ey, 0.25f);
 
         if(unit instanceof Player && ((Player)unit).isLocal){
+            Draw.alpha( opacity);
             Lines.stroke(1f, Pal.accent);
+            Draw.alpha( opacity);
             Lines.poly(tile.worldx(), tile.worldy(), 4, tilesize / 2f * Mathf.sqrt2, Time.time());
         }
-
+        Draw.alpha( opacity );
         Draw.color();
+        Draw.reset();
     }
 }

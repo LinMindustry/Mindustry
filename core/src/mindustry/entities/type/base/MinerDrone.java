@@ -1,14 +1,22 @@
 package mindustry.entities.type.base;
 
+import arc.Core;
+import arc.graphics.Color;
+import arc.graphics.g2d.Draw;
 import arc.math.Mathf;
 import arc.util.Structs;
+import arc.util.Time;
 import mindustry.content.Blocks;
+import mindustry.content.Fx;
+import mindustry.entities.Effects;
+import mindustry.entities.Units;
 import mindustry.entities.traits.MinerTrait;
 import mindustry.entities.type.TileEntity;
 import mindustry.entities.units.UnitState;
 import mindustry.gen.Call;
 import mindustry.type.Item;
 import mindustry.type.ItemType;
+import mindustry.type.UnitType;
 import mindustry.world.Pos;
 import mindustry.world.Tile;
 
@@ -105,10 +113,21 @@ public class MinerDrone extends BaseDrone implements MinerTrait{
             circle(type.range / 1.8f);
         }
     };
-
+    // get settings for transparency of the draugs here
+    public float opacity1 = Core.settings.getInt("drawDraugsOpacity") / 100f;
     @Override
     public UnitState getStartState(){
         return mine;
+    }
+
+    @Override
+    public void drawPulver(Tile tile, Item item) {
+        if(Mathf.chance(0.06 * Time.delta())){
+            Effects.effect(Fx.pulverizeSmallTrans,
+                    tile.worldx() + Mathf.range(tilesize / 2f),
+                    tile.worldy() + Mathf.range(tilesize / 2f), 0f, item.color);
+        }
+
     }
 
     @Override
@@ -129,12 +148,67 @@ public class MinerDrone extends BaseDrone implements MinerTrait{
 
     @Override
     public boolean shouldRotate(){
-        return isMining();
+        //return isMining();
+        return false;
     }
 
     @Override
     public void drawOver(){
-        drawMining();
+        Draw.alpha(opacity1);
+        drawMining(opacity1);
+        Draw.reset();
+    }
+
+    @Override
+    public void drawWeapons() {
+        Draw.alpha(opacity1);
+        super.drawWeapons();
+        Draw.reset();
+    }
+
+    @Override
+    public void drawEngine(float opacity) {
+        Draw.alpha(opacity1);
+        super.drawEngine(opacity1);
+        Draw.reset();
+    }
+
+    @Override
+    public void drawStats(float opacity) {
+        super.drawStats(opacity1);
+        Draw.reset();
+    }
+
+    @Override
+    public void drawLight() {
+        Draw.alpha(opacity1);
+        super.drawLight();
+        Draw.reset();
+    }
+
+    @Override
+    public void drawShadow(float offsetX, float offsetY) {
+        return;
+    }
+
+    @Override
+    public void draw() {
+        Draw.alpha(opacity1);
+        super.draw();
+        Draw.reset();
+    }
+
+    @Override
+    public void drawBackItems(float itemtime, boolean number) {
+        UnitType unit = content.units().get(0);
+        int countsOfDraugs = unitGroup.count(b -> b.getTeam() == player.getTeam() && b.getTypeID().name.equals(unit.typeID.name));
+        if (countsOfDraugs>20){
+            Draw.alpha(opacity1);
+        }else{
+            Draw.alpha(0.99f);
+        }
+        super.drawBackItems(itemtime, number);
+        Draw.reset();
     }
 
     @Override

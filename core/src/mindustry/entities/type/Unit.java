@@ -13,6 +13,8 @@ import mindustry.content.*;
 import mindustry.entities.*;
 import mindustry.entities.effect.*;
 import mindustry.entities.traits.*;
+import mindustry.entities.type.base.FlyingUnit;
+import mindustry.entities.type.base.GroundUnit;
 import mindustry.entities.units.*;
 import mindustry.game.EventType.*;
 import mindustry.game.*;
@@ -25,8 +27,11 @@ import mindustry.world.*;
 import mindustry.world.blocks.*;
 
 import java.io.*;
+import java.util.Map;
 
 import static mindustry.Vars.*;
+import static mindustry.content.UnitTypes.*;
+import static mindustry.content.UnitTypes.revenant;
 
 public abstract class Unit extends DestructibleEntity implements SaveTrait, TargetTrait, SyncTrait, DrawTrait, TeamTrait{
     /** Total duration of hit flash effect */
@@ -381,13 +386,16 @@ public abstract class Unit extends DestructibleEntity implements SaveTrait, Targ
     public void drawOver(){
     }
 
-    public void drawStats(){
+    public void drawStats(float opacity){
+        Draw.alpha(opacity);
         Draw.color(Color.black, team.color, healthf() + Mathf.absin(Time.time(), Math.max(healthf() * 5f, 1f), 1f - healthf()));
+        Draw.alpha(opacity);
         Draw.rect(getPowerCellRegion(), x, y, rotation - 90);
+        Draw.alpha(opacity);
         Draw.color();
-
+        Draw.alpha(opacity);
         drawBackItems(item.amount > 0 ? 1f : 0f, false);
-
+        Draw.alpha(opacity);
         drawLight();
     }
 
@@ -410,6 +418,7 @@ public abstract class Unit extends DestructibleEntity implements SaveTrait, Targ
             Draw.mixcol();
 
             Lines.stroke(1f, Pal.accent);
+            Draw.alpha(0.3f);
             Lines.circle(
                 x + Angles.trnsx(rotation + 180f, backTrns),
                 y + Angles.trnsy(rotation + 180f, backTrns),
@@ -434,7 +443,18 @@ public abstract class Unit extends DestructibleEntity implements SaveTrait, Targ
     public void drawAll(){
         if(!isDead()){
             draw();
-            drawStats();
+//            if(!(this instanceof Player)) {
+//                Draw.reset();
+//                if(this.getTeam() == player.getTeam()) {
+//                    Draw.color(Color.green);
+//                }
+//                else {
+//                    Draw.color(Color.red);
+//                }
+//                Lines.line(x - (this.health / 25), y + 10, x + (this.health / 25), y + 10, CapStyle.none);
+//                Draw.reset();
+//            }
+            drawStats(0.9f);
         }
     }
 

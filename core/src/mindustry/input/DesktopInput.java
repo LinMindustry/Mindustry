@@ -11,9 +11,11 @@ import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.util.ArcAnnotate.*;
 import arc.util.*;
+import com.sun.tools.internal.xjc.reader.xmlschema.BindGreen;
 import mindustry.*;
 import mindustry.core.GameState.*;
 import mindustry.entities.traits.BuilderTrait.*;
+import mindustry.entities.type.Player;
 import mindustry.game.EventType.*;
 import mindustry.game.*;
 import mindustry.gen.*;
@@ -197,6 +199,41 @@ public class DesktopInput extends InputHandler{
             }else if(!selectRequests.isEmpty()){
                 rotateRequests(selectRequests, (int)Core.input.axisTap(Binding.rotate));
             }
+        }
+
+        if(Core.input.keyRelease(Binding.freecam) && !ui.chatfrag.shown()) {
+            griefWarnings.commandHandler.runCommand("/freecam on");
+        }
+
+        // custom
+        if(Core.input.keyRelease(Binding.history) && Core.input.keyDown(Binding.diagonal_placement)) {
+            Call.sendChatMessage("/history");
+        }
+
+        if(Core.input.keyRelease(Binding.freecam) && Core.input.keyDown(Binding.diagonal_placement)) {
+            for(Player user: playerGroup){
+                if(user.onKick) {
+                    // reset freecam
+                    user.onKick = false;
+                }
+            }
+            griefWarnings.commandHandler.runCommand("/freecam off");
+        }
+
+        if(Core.input.keyRelease(Binding.player_list) && Core.input.keyDown(Binding.diagonal_placement)) {
+            Call.sendChatMessage("/hub");
+        }
+
+        if(Core.input.keyRelease(Binding.schematic_flip_x) && Core.input.keyDown(Binding.diagonal_placement)) {
+            griefWarnings.commandHandler.runCommand("/fixpower");
+        }
+
+        if(Core.input.keyRelease(Binding.block_select_01) && Core.input.keyDown(Binding.diagonal_placement)) {
+            Call.sendChatMessage("[yellow]Players[white] deal no [red]Damage[white] this server is focused on building and [green]Teamwork");
+        }
+
+        if(Core.input.keyRelease(Binding.block_select_02) && Core.input.keyDown(Binding.diagonal_placement)) {
+            Call.sendChatMessage("To change teams relog and type [green]/team");
         }
 
         Tile cursor = tileAt(Core.input.mouseX(), Core.input.mouseY());

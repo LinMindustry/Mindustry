@@ -55,6 +55,7 @@ public class BuildBlock extends Block{
 
     @Remote(called = Loc.server)
     public static void onDeconstructFinish(Tile tile, Block block, int builderID){
+        griefWarnings.handleBlockDeconstructFinish(tile, block, builderID);
         Team team = tile.getTeam();
         Effects.effect(Fx.breakBlock, tile.drawx(), tile.drawy(), block.size);
         Events.fire(new BlockBuildEndEvent(tile, playerGroup.getByID(builderID), team, true));
@@ -77,6 +78,8 @@ public class BuildBlock extends Block{
             }
         }
         Effects.effect(Fx.placeBlock, tile.drawx(), tile.drawy(), block.size);
+
+        griefWarnings.handleBlockConstructFinish(tile, block, builderID);
     }
 
     static boolean shouldPlay(){
@@ -242,6 +245,7 @@ public class BuildBlock extends Block{
 
             if(builder instanceof Player){
                 builderID = builder.getID();
+                griefWarnings.handleBlockConstructProgress((Player)builder, tile, cblock, progress, previous);
             }
 
             if(progress >= 1f || state.rules.infiniteResources){
@@ -252,7 +256,7 @@ public class BuildBlock extends Block{
         }
 
         public void deconstruct(Unit builder, @Nullable TileEntity core, float amount){
-            float deconstructMultiplier = 0.5f;
+            float deconstructMultiplier = state.rules.deconstructRefundMultiplier;
 
             if(cblock != null){
                 ItemStack[] requirements = cblock.requirements;
@@ -283,6 +287,7 @@ public class BuildBlock extends Block{
             }
 
             progress = Mathf.clamp(progress - amount);
+            if (builder instanceof Player) griefWarnings.handleBlockDeconstructProgress((Player)builder, tile, cblock, progress, previous);
 
             if(builder instanceof Player){
                 builderID = builder.getID();
