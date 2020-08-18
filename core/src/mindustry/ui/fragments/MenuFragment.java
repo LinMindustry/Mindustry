@@ -197,14 +197,15 @@ public class MenuFragment extends Fragment{
                             String downloadlink = obj.getString("Url");
                             String updatedate = obj.getString("UpdateTime");
                             String updatelog = obj.getString("ReleaseNote");
-                            ui.updateDialog.show("An update found!\nRelease Date: " + updatedate + "\n----- Update log -----\n" + updatelog, downloadlink);
+                            ui.updateDialog.show("An update found!\nRelease Date: " + updatedate + "\n----- Update log -----\n" + updatelog, downloadlink, currentVersion);
                         }
                         else {
-                            ui.updateDialog.show("No update found. Thanks for using. Click \"Cancel\" to quit.\n:P", obj.getString("Url"));
+                            ui.updateDialog.show("No update found. Thanks for using. Click \"Cancel\" to quit.\n\n:P\n\n", obj.getString("Url"), currentVersion);
                         }
                     }
                     catch(Exception e) {
                         System.out.println(e + "\nNot able to fetch update log.\n");
+                        ui.updateDialog.show("Download URL error. Please ping developers in the discord channel. :/", null, null);
                     }
                 }),
                 new Buttoni("$quit", Icon.exit, Core.app::exit)

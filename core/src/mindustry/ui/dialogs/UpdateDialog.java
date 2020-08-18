@@ -35,22 +35,17 @@ public class UpdateDialog extends FloatingDialog{
         setFillParent(false);
     }
 
-    public void show(String updateLog, String downloadlink) {
+    public void show(String updateLog, String downloadlink, String version) {
         log.clear();
         log.setText(updateLog);
         process.clear();
-        process.setText("Waiting..... Path: " + System.getProperty("user.dir"));
+        process.setText("Download Path: " + System.getProperty("user.dir"));
         downloader = () -> {
             try {
                 URL website = new URL(downloadlink);
                 ReadableByteChannel rbc = Channels.newChannel(website.openStream());
-                FileOutputStream fos = new FileOutputStream(System.getProperty("user.dir") + "/temp");
+                FileOutputStream fos = new FileOutputStream(System.getProperty("user.dir") + "/Mindustry_" + version + ".jar");
                 fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-                // download done
-                File oldMind = new File(System.getProperty("user.dir") + "/Mindustry.jar");
-                oldMind.delete();
-                File newMind = new File(System.getProperty("user.dir") + "/temp");
-                newMind.renameTo(oldMind);
                 process.setText("Done");
             }
             catch (IOException e) {
@@ -62,7 +57,6 @@ public class UpdateDialog extends FloatingDialog{
         task = () -> {
             process.setText("Downloading -> Path: " + System.getProperty("user.dir"));
             new Thread(downloader).start();
-            Core.app.exit();
         };
         buttons.clear();
         addCloseButton();
