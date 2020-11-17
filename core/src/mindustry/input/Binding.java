@@ -59,6 +59,7 @@ public enum Binding implements KeyBind{
     // custom
     history(KeyCode.H),
     power(KeyCode.S),
+    test(KeyCode.O),
     ;
 
     private final KeybindValue defaultValue;

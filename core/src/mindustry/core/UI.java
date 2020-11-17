@@ -456,7 +456,7 @@ public class UI implements ApplicationListener, Loadable{
         showConfirm(title, text, null, confirmed);
     }
 
-    public void showKickConfirm(String title, String text, Boolp hide, Runnable mass, Runnable power, Runnable micro, Runnable others, int ref) {
+    public void showKickConfirm(String title, String text, Boolp hide, Runnable mass, Runnable power, Runnable micro, Runnable others, int ref, String name) {
         FloatingDialog dialog = new FloatingDialog(title);
         dialog.cont.add(text).width(mobile ? 400f : 500f).wrap().pad(4f).get().setAlignment(Align.center, Align.center);
         dialog.buttons.defaults().size(mobile ? 100f : 200f, 54f).pad(2f);
@@ -464,28 +464,57 @@ public class UI implements ApplicationListener, Loadable{
         dialog.buttons.addButton("$cancel", dialog::hide);
         dialog.buttons.addButton("mass", () -> {
             dialog.hide();
+            Call.sendChatMessage("Player " + name + " [red]kicked");
+            try{
+                if(ref > -1) {
+                    griefWarnings.commandHandler.runCommand("/undoactions &" + ref);
+                }
+            }
+            catch(Exception e) {
+                ui.chatfrag.addMessage("[red]Undo action Error! Please @Lin in the discord.\n" + e + "[white]\n", null);
+            }
             mass.run();
-            if(ref != -1)
-                griefWarnings.commandHandler.runCommand("/undoactions &" + ref);
+
         });
         dialog.buttons.addButton("power", () -> {
             dialog.hide();
+            Call.sendChatMessage("Player " + name + " [red]kicked");
+            try{
+                if(ref > -1) {
+                    griefWarnings.commandHandler.runCommand("/undoactions &" + ref);
+                }
+            }
+            catch(Exception e) {
+                ui.chatfrag.addMessage("[red]Undo action Error! Please @Lin in the discord.\n" + e + "[white]\n", null);
+            }
             power.run();
-            if(ref != -1)
-                griefWarnings.commandHandler.runCommand("/undoactions &" + ref);
         });
         dialog.buttons.row();
         dialog.buttons.addButton("micro", () -> {
             dialog.hide();
+            Call.sendChatMessage("Player " + name + " [red]kicked");
+            try{
+                if(ref > -1) {
+                    griefWarnings.commandHandler.runCommand("/undoactions &" + ref);
+                }
+            }
+            catch(Exception e) {
+                ui.chatfrag.addMessage("[red]Undo action Error! Please @Lin in the discord.\n" + e + "[white]\n", null);
+            }
             micro.run();
-            if(ref != -1)
-                griefWarnings.commandHandler.runCommand("/undoactions &" + ref);
         });
         dialog.buttons.addButton("others", () -> {
             dialog.hide();
+            Call.sendChatMessage("Player " + name + " [red]kicked");
+            try{
+                if(ref > -1) {
+                    griefWarnings.commandHandler.runCommand("/undoactions &" + ref);
+                }
+            }
+            catch(Exception e) {
+                ui.chatfrag.addMessage("[red]Undo action Error! Please @Lin in the discord.\n" + e + "[white]\n", null);
+            }
             others.run();
-            if(ref != -1)
-                griefWarnings.commandHandler.runCommand("/undoactions &" + ref);
         });
         if(hide != null){
             dialog.update(() -> {

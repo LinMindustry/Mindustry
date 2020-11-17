@@ -35,6 +35,7 @@ import mindustry.ui.dialogs.*;
 import mindustry.game.griefprevention.TileInfoHud;
 
 // CUSTOM
+import mindustry.world.Block;
 import mindustry.world.Tile;
 
 import java.util.Map;
@@ -194,6 +195,25 @@ public class HudFragment extends Fragment{
 
                             if(++i % 3 == 0){
                                 teams.row();
+                            }
+                        }
+                    }).left();
+
+                    t.row();
+                    t.table(blocks -> {
+                        blocks.left();
+                        int i = 0;
+                        for(Block block : content.blocks()) {
+                            TextureRegion region = block.icon(Cicon.small);
+                            ImageButton button = blocks.addImageButton(Tex.whiteui, Styles.clearTogglePartiali, 20f, () -> {
+                                System.out.println(block.name);
+                                ui.editor.editor.drawBlock = block;
+                            }).size(25f).margin(5f).get();
+                            button.getStyle().imageUp = new TextureRegionDrawable(region);
+                            button.getImageCell().grow();
+                            button.update(() -> button.setChecked(ui.editor.editor.drawBlock == block));
+                            if(++i % 10 == 0) {
+                                blocks.row();
                             }
                         }
                     }).left();

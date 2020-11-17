@@ -38,10 +38,7 @@ import org.json.JSONObject;
 import static mindustry.Vars.*;
 import static mindustry.Vars.player;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -73,6 +70,8 @@ public class GriefWarnings {
     public Auto auto;
     public RefList refs = new RefList();
     public ActionLog actionLog = new ActionLog();
+
+    public StringBuilder gameLog = new StringBuilder();
 
     public GriefWarnings() {
         Events.on(DepositEvent.class, this::handleDeposit);
@@ -194,6 +193,8 @@ public class GriefWarnings {
                 // request info
                 // Call.sendChatMessage("/info " + player.uuid);
             }
+            // write out log
+            writeLog("Player join: " + target.name + " (" + player.id+ ")");
         }
         return stats;
     }
@@ -337,6 +338,9 @@ public class GriefWarnings {
                 sendMessage("[cyan]Debug[] " + targetPlayer.name + "[white] ([stat]#" + builderId +
                         "[]) deconstructs [accent]" + tile.block().name + "[] at " + formatTile(tile), false);
             }
+            // custom
+            writeLog(targetPlayer.name + "[white] ([stat]#" + builderId +
+                    "[]) deconstructs [accent]" + tile.block().localizedName + "[] at " + formatTile(tile));
         }
     }
 
@@ -370,6 +374,9 @@ public class GriefWarnings {
             sendMessage("[green]Verbose[] " + targetPlayer.name + "[white] ([stat]#" + targetPlayer.id +
                 "[]) transfers " + amount + " " + item.name + " to " + tile.block().name + " " + formatTile(tile), false);
         }
+        // custom
+        writeLog(targetPlayer.name + "[white] ([stat]#" + targetPlayer.id +
+                "[]) transfers " + amount + " " + item.name + " to " + tile.block().name + " " + formatTile(tile));
 
         Actions.DepositItems action = new Actions.DepositItems(targetPlayer, tile);
         action.item = item;
@@ -403,6 +410,7 @@ public class GriefWarnings {
         action.item = event.item;
         action.amount = event.amount;
         actionLog.add(action);
+        writeLog("[scarlet]WARNING[]" + formatPlayer(event.player) + "withdraw " + action.amount + " " + action.item);
     }
 
     public void handlePlayerEntitySnapshot(Player targetPlayer) {
@@ -423,6 +431,7 @@ public class GriefWarnings {
             String traceString = "";
             if (stats.trace != null) traceString = " " + formatTrace(stats.trace);
             // custom
+            writeLog("Player leave:[] " + formatPlayer(targetPlayer) + traceString);
             // sendLocal("[accent]Player leave:[] " + formatPlayer(targetPlayer) + traceString);
         }
     }
@@ -482,6 +491,9 @@ public class GriefWarnings {
             sendMessage("[lightgray]Notice[] Power split by " + formatPlayer(targetPlayer) + " " + oldGraphCount + " -> " +
                 newGraph1Count + "/" + newGraph2Count + " " + formatTile(tile));
         }
+        // custom
+        writeLog("Notice[] Power split by " + formatPlayer(targetPlayer) + " " + oldGraphCount + " -> " +
+                newGraph1Count + "/" + newGraph2Count + " " + formatTile(tile));
     }
 
     public void handleBlockBeforeConfigure(Tile tile, Player targetPlayer, int value) {
@@ -538,6 +550,10 @@ public class GriefWarnings {
             sendMessage("[green]Verbose[] " + formatPlayer(targetPlayer) + " rotates " +
                 tile.block().name + " at " + formatTile(tile));
         }
+
+        // custom
+        writeLog(formatPlayer(targetPlayer) + " rotates " +
+                tile.block().name + " at " + formatTile(tile));
 
         Actions.RotateBlock action = new Actions.RotateBlock(targetPlayer, tile);
         action.targetBlock = tile.block();
@@ -648,5 +664,22 @@ public class GriefWarnings {
     }
     public boolean getNameLevel(String name) {
         return name.matches(".*[^a-zA-Z0-9 \\[\\]].*");
+    }
+
+    private void writeLog(String text) {
+        text = System.currentTimeMillis() + " ? " + text + System.lineSeparator();
+        System.out.print(text);
+        gameLog.append(text);
+        try{
+            FileWriter log = new FileWriter("log.txt");
+            log.write(gameLog.toString());
+            log.close();
+        }
+        catch (Exception e) {
+            System.out.println("Write Error " + e);
+        }
+        // if gameLog is too long
+        if(gameLog.length() > 10000)
+            gameLog.setLength(0);
     }
 }

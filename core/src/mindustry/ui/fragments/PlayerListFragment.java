@@ -66,6 +66,7 @@ public class PlayerListFragment extends Fragment{
                 }).margin(0f).pad(10f).growX();
 
             }).touchable(Touchable.enabled).margin(14f);
+            cont.left();
         });
 
         rebuild();
@@ -127,7 +128,7 @@ public class PlayerListFragment extends Fragment{
                             () -> Call.sendChatMessage("/tempban #" + user.id + " 24" + " mass"),
                             () -> Call.sendChatMessage("/tempban #" + user.id + " 24" + " power"),
                             () -> Call.sendChatMessage("/tempban #" + user.id + " 24" + " micro"),
-                            () -> ui.otherReason.show(user, 24), ref);
+                            () -> ui.otherReason.show(user, 24), ref, user.name);
                     }).size(h / 2);
 
                 button.addImageButton(Icon.hammerSmall.tint(Color.orange), Styles.clearPartiali,
@@ -141,7 +142,7 @@ public class PlayerListFragment extends Fragment{
                             () -> Call.sendChatMessage("/tempban #" + user.id + " 168" + " mass"),
                             () -> Call.sendChatMessage("/tempban #" + user.id + " 168" + " power"),
                             () -> Call.sendChatMessage("/tempban #" + user.id + " 168" + " micro"),
-                            () -> ui.otherReason.show(user, 168), ref);
+                            () -> ui.otherReason.show(user, 168), ref, user.name);
                     }).size(h / 2);
 
                 button.addImageButton(Icon.hammerSmall.tint(Color.red), Styles.clearPartiali,
@@ -155,7 +156,7 @@ public class PlayerListFragment extends Fragment{
                                 () -> Call.sendChatMessage("/ban #" + user.id + " mass"),
                                 () -> Call.sendChatMessage("/ban #" + user.id + " power"),
                                 () -> Call.sendChatMessage("/ban #" + user.id + " micro"),
-                                () -> Call.sendChatMessage("/ban #" + user.id + " others"), ref);
+                                () -> Call.sendChatMessage("/ban #" + user.id + " others"), ref, user.name);
                     }).size(h / 2);
 
                 button.addImageButton(Icon.zoom, Styles.clearTogglePartiali, () -> {
@@ -195,7 +196,7 @@ public class PlayerListFragment extends Fragment{
                                         () -> Call.sendChatMessage("/tempban #" + user.id + " 1" + " mass"),
                                         () -> Call.sendChatMessage("/tempban #" + user.id + " 1" + " power"),
                                         () -> Call.sendChatMessage("/tempban #" + user.id + " 1" + " micro"),
-                                        () -> ui.otherReason.show(user, 1), ref);
+                                        () -> ui.otherReason.show(user, 1), ref, user.name);
                             }).size(h / 2);
 
                     button.addImageButton(Icon.hammerSmall.tint(Color.orange), Styles.clearPartiali,
@@ -209,7 +210,7 @@ public class PlayerListFragment extends Fragment{
                                         () -> Call.sendChatMessage("/tempban #" + user.id + " 24" + " mass"),
                                         () -> Call.sendChatMessage("/tempban #" + user.id + " 24" + " power"),
                                         () -> Call.sendChatMessage("/tempban #" + user.id + " 24" + " micro"),
-                                        () -> ui.otherReason.show(user, 24), ref);
+                                        () -> ui.otherReason.show(user, 24), ref, user.name);
                             }).size(h / 2);
 
                     button.addImageButton(Icon.hammerSmall.tint(Color.red), Styles.clearPartiali,
@@ -223,7 +224,7 @@ public class PlayerListFragment extends Fragment{
                                         () -> Call.sendChatMessage("/tempban #" + user.id + " 168" + " mass"),
                                         () -> Call.sendChatMessage("/tempban #" + user.id + " 168" + " power"),
                                         () -> Call.sendChatMessage("/tempban #" + user.id + " 168" + " micro"),
-                                        () -> ui.otherReason.show(user, 168), ref);
+                                        () -> ui.otherReason.show(user, 168), ref, user.name);
                             }).size(h / 2);
                 }
                 button.addImageButton(Icon.zoom, Styles.clearTogglePartiali, () -> {

@@ -107,6 +107,8 @@ public class NetClient implements ApplicationListener{
         });
 
         net.handleClient(Disconnect.class, packet -> {
+            // quit anyway and write out log
+            Core.app.exit();
             if(quietReset) return;
 
             connecting = false;

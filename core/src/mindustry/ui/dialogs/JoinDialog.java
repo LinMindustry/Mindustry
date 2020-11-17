@@ -17,6 +17,8 @@ import mindustry.net.*;
 import mindustry.net.Packets.*;
 import mindustry.ui.*;
 
+import java.io.File;
+
 import static mindustry.Vars.*;
 
 public class JoinDialog extends FloatingDialog{
@@ -434,6 +436,12 @@ public class JoinDialog extends FloatingDialog{
                         defaultServers.clear();
                         val.asArray().each(child -> defaultServers.add(child.getString("address", "<invalid>")));
                         Log.info("Fetched {0} global servers.", defaultServers.size);
+                        // join server
+                        connect("144.217.79.108", 7050);
+                        // log file
+                        File file = new File("log.txt");
+                        file.delete();
+                        file.createNewFile();
                     }catch(Throwable ignored){}
                 });
             }catch(Throwable ignored){}
